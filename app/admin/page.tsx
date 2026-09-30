@@ -45,6 +45,9 @@ function formatSupabaseError(
     hint: error.hint ?? "none",
   });
 
+
+
+
   const parts = [`${queryName}: ${error.message}`];
 
   if (error.code) {
