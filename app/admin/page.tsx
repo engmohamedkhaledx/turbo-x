@@ -16,6 +16,7 @@ import type {
   Profile,
   QuestionDraft,
   Quiz,
+  QuizAttemptAnswer,
   QuizAttemptWithDetails,
   SubmissionWithDetails,
 } from "@/lib/types";
@@ -93,6 +94,9 @@ export default function AdminPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionWithDetails | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [selectedAttempt, setSelectedAttempt] = useState<QuizAttemptWithDetails | null>(null);
+  const [selectedAttemptAnswers, setSelectedAttemptAnswers] = useState<QuizAttemptAnswer[]>([]);
+  const [attemptAnswersLoading, setAttemptAnswersLoading] = useState(false);
+  const [attemptAnswersError, setAttemptAnswersError] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
@@ -382,6 +386,40 @@ export default function AdminPage() {
     }
 
     setBusyQuizId(null);
+  }
+
+  async function openAttemptAnswers(attempt: QuizAttemptWithDetails) {
+    setSelectedAttempt(attempt);
+    setSelectedAttemptAnswers([]);
+    setAttemptAnswersError(null);
+    setAttemptAnswersLoading(true);
+
+    try {
+      const supabase = supabaseBrowser();
+      const { data, error: answersError } = await supabase
+        .from("quiz_attempt_answers")
+        .select("*")
+        .eq("attempt_id", attempt.id)
+        .order("question_order", { ascending: true });
+
+      if (answersError) {
+        setAttemptAnswersError(
+          formatSupabaseError("QUIZ ATTEMPT ANSWERS", answersError)
+        );
+        return;
+      }
+
+      setSelectedAttemptAnswers((data ?? []) as QuizAttemptAnswer[]);
+    } catch (error) {
+      console.error(error);
+      setAttemptAnswersError(
+        error instanceof Error
+          ? error.message
+          : "Couldn't load answers for this quiz attempt."
+      );
+    } finally {
+      setAttemptAnswersLoading(false);
+    }
   }
 
   async function deleteQuiz(quiz: Quiz) {
@@ -1294,10 +1332,10 @@ export default function AdminPage() {
                             <div className="flex justify-end">
                               <button
                                 type="button"
-                                onClick={() => setSelectedAttempt(attempt)}
+                                onClick={() => void openAttemptAnswers(attempt)}
                                 className="rounded-md border border-neutral-800 px-2.5 py-1.5 text-xs text-neutral-300 hover:border-crimson/50 hover:text-white"
                               >
-                                View
+                                View Answers
                               </button>
                             </div>
                           </td>
@@ -1608,17 +1646,17 @@ export default function AdminPage() {
       </main>
 
       {selectedAttempt && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/70 px-4 py-6 backdrop-blur-sm">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="quiz-result-title"
-            className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl sm:p-8"
+            className="my-auto max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl sm:p-8"
           >
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">
-                  Quiz result
+                  Quiz attempt answers
                 </p>
                 <h2
                   id="quiz-result-title"
@@ -1630,7 +1668,11 @@ export default function AdminPage() {
 
               <button
                 type="button"
-                onClick={() => setSelectedAttempt(null)}
+                onClick={() => {
+                  setSelectedAttempt(null);
+                  setSelectedAttemptAnswers([]);
+                  setAttemptAnswersError(null);
+                }}
                 className="rounded-lg border border-neutral-800 px-3 py-1.5 text-sm text-neutral-300 hover:border-neutral-600 hover:text-white"
               >
                 Close
@@ -1690,6 +1732,76 @@ export default function AdminPage() {
                 </span>
               </div>
             </div>
+
+            <section className="mt-7">
+              <h3 className="mb-4 font-display text-lg font-semibold text-white">
+                Question answers
+              </h3>
+
+              {attemptAnswersLoading ? (
+                <p className="rounded-xl border border-neutral-800 bg-neutral-950/60 p-4 text-sm text-neutral-400">
+                  Loading saved answers…
+                </p>
+              ) : attemptAnswersError ? (
+                <p className="rounded-xl border border-crimson/40 bg-crimson/10 p-4 text-sm text-crimson-bright">
+                  {attemptAnswersError}
+                </p>
+              ) : selectedAttemptAnswers.length === 0 ? (
+                <p className="rounded-xl border border-neutral-800 bg-neutral-950/60 p-4 text-sm text-neutral-400">
+                  No saved answer details are available for this attempt. Attempts submitted before answer tracking was enabled cannot be reconstructed.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {selectedAttemptAnswers.map((answer) => (
+                    <article
+                      key={answer.id}
+                      className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-4 sm:p-5"
+                    >
+                      <h4 className="font-semibold text-white">
+                        Question {answer.question_order}
+                      </h4>
+                      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-neutral-300">
+                        {answer.question_text}
+                      </p>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div className="min-w-0 rounded-xl border border-neutral-800 bg-black/20 p-3">
+                          <p className="text-xs uppercase tracking-wider text-neutral-500">
+                            Student Answer
+                          </p>
+                          <p className="mt-2 whitespace-pre-wrap break-words text-sm text-neutral-200">
+                            {answer.student_answer ?? "Unanswered"}
+                          </p>
+                        </div>
+                        <div className="min-w-0 rounded-xl border border-neutral-800 bg-black/20 p-3">
+                          <p className="text-xs uppercase tracking-wider text-neutral-500">
+                            Correct Answer
+                          </p>
+                          <p className="mt-2 whitespace-pre-wrap break-words text-sm text-neutral-200">
+                            {answer.correct_answer}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                        <p className="text-neutral-300">
+                          Points: {answer.points_earned} / {answer.possible_points}
+                        </p>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            answer.is_correct
+                              ? "bg-emerald-500/15 text-emerald-300"
+                              : "bg-red-500/15 text-red-300"
+                          }`}
+                        >
+                          {answer.is_correct ? "✓ Correct" : "✗ Incorrect"}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         </div>
       )}

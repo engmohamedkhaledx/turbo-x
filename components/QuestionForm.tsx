@@ -50,12 +50,13 @@ export default function QuestionForm({
           <label className="mb-1.5 block text-xs text-neutral-500">
             Question text
           </label>
-          <input
+          <textarea
             required
             value={question.question_text}
             onChange={(e) => update("question_text", e.target.value)}
             placeholder="What is C++?"
-            className="focus-ring w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600"
+            rows={5}
+            className="focus-ring w-full resize-y rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600"
           />
         </div>
 
@@ -66,11 +67,12 @@ export default function QuestionForm({
                 <label className="mb-1.5 block text-xs text-neutral-500">
                   Option {i + 1}
                 </label>
-                <input
+                <textarea
                   required
                   value={question[key]}
                   onChange={(e) => update(key, e.target.value)}
-                  className="focus-ring w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600"
+                  rows={3}
+                  className="focus-ring w-full resize-y rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600"
                 />
               </div>
             )

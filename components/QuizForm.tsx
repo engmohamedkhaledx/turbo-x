@@ -17,25 +17,6 @@ function emptyQuestion(): QuestionDraft {
   };
 }
 
-function toQuestionDraft(question: {
-  question_text: string;
-  options?: string[] | null;
-  correct_answer: string;
-  points: number;
-}): QuestionDraft {
-  const options = question.options ?? [];
-
-  return {
-    question_text: question.question_text,
-    option_1: options[0] ?? "",
-    option_2: options[1] ?? "",
-    option_3: options[2] ?? "",
-    option_4: options[3] ?? "",
-    correct_answer: question.correct_answer,
-    points: question.points,
-  };
-}
-
 interface QuizFormProps {
   onCreated: () => void;
   onCancel: () => void;
@@ -145,14 +126,14 @@ export default function QuizForm({
     try {
       const rows = questions.map((q) => ({
         quiz_id: initialQuiz?.id,
-        question_text: q.question_text.trim(),
+        question_text: q.question_text,
         options: [
-          q.option_1.trim(),
-          q.option_2.trim(),
-          q.option_3.trim(),
-          q.option_4.trim(),
+          q.option_1,
+          q.option_2,
+          q.option_3,
+          q.option_4,
         ],
-        correct_answer: q.correct_answer.trim(),
+        correct_answer: q.correct_answer,
         points: q.points,
       }));
 

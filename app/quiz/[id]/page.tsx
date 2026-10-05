@@ -207,15 +207,16 @@ export default function QuizPage() {
       /*
        * Save attempt
        */
-      const { error } = await supabase
-        .from("quiz_attempts")
-        .insert({
-          quiz_id: quiz.id,
-          student_id: profile.id,
-          score,
-          total_points: totalPoints,
-          percentage,
-        });
+      const { error } = await supabase.rpc("submit_quiz_attempt", {
+        p_quiz_id: quiz.id,
+        p_student_id: profile.id,
+        p_answers: Object.fromEntries(
+          questions.map((question) => [
+            String(question.id),
+            answers[question.id] ?? null,
+          ])
+        ),
+      });
 
       if (error) {
         console.error(error);
@@ -245,6 +246,7 @@ export default function QuizPage() {
     quiz,
     result,
     submitting,
+    alreadyAttempted,
     supabase,
   ]);
 
@@ -621,7 +623,7 @@ export default function QuizPage() {
                     className="rounded-2xl border border-white/10 bg-black/20 p-5"
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
-                      <p className="text-base font-bold leading-relaxed text-white">
+                      <p className="whitespace-pre-wrap break-words text-base font-bold leading-relaxed text-white">
                         {index + 1}. {question.question_text}
                       </p>
                       <span
@@ -652,7 +654,9 @@ export default function QuizPage() {
                                 : "border-white/10 bg-white/5 text-slate-300"
                             }`}
                           >
-                            <span className="font-bold">{letter}.</span> {option}
+                            <span className="whitespace-pre-wrap break-words">
+                              <span className="font-bold">{letter}.</span> {option}
+                            </span>
                             {isCorrectOption && " • Correct answer"}
                             {isSelected && !isCorrectOption && " • Your answer"}
                           </div>
@@ -662,7 +666,7 @@ export default function QuizPage() {
 
                     {!isCorrect && (
                       <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-sm text-emerald-300">
-                        Correct answer: <span className="font-bold">{correctAnswer}</span>
+                        Correct answer: <span className="whitespace-pre-wrap break-words font-bold">{correctAnswer}</span>
                       </div>
                     )}
                   </div>
@@ -760,7 +764,7 @@ export default function QuizPage() {
                   Question {currentQuestion + 1}
                 </div>
 
-                <h2 className="text-xl font-bold leading-relaxed sm:text-2xl">
+                <h2 className="whitespace-pre-wrap break-words text-xl font-bold leading-relaxed sm:text-2xl">
                   {current?.question_text}
                 </h2>
               </div>
@@ -804,7 +808,7 @@ export default function QuizPage() {
                       {letter}
                     </span>
 
-                    <span className="flex-1 font-medium">
+                    <span className="flex-1 whitespace-pre-wrap break-words font-medium">
                       {option}
                     </span>
 

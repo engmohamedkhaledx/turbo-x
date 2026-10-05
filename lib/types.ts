@@ -57,6 +57,24 @@ export interface QuizAttemptWithDetails extends QuizAttempt {
   } | null;
 }
 
+export interface QuizAttemptAnswer {
+  id: number;
+  attempt_id: number;
+  question_id: number | null;
+  student_answer: string | null;
+  is_correct: boolean;
+  points_earned: number;
+  question_text: string;
+  correct_answer: string;
+  possible_points: number;
+  question_order: number;
+  created_at: string;
+}
+
+export interface QuizAttemptWithAnswers extends QuizAttemptWithDetails {
+  answers: QuizAttemptAnswer[];
+}
+
 export interface Assignment {
   id: number;
   title: string;
